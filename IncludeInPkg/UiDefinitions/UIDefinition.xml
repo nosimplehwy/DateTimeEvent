@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<uidefinition xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://prd-use-rad-assets.azurewebsites.net/ExtensionsSchemaDefinition.xsd">
+    <version ver="2.0" />
+  <tile icon="#icTimeRegular" navigation="show:MainPage" showinhomepage="#false" showinroompage="#true" status="{EventStatusText}"/>
+  <layouts>
+    <layout id="MainPage" title="^MainPageTitle" isdefaultlayout="#true">
+      <controls>
+        <textentry id="EditEventDateTimeTextEntry" label="^EditEventDateTimeLabel" value="{EventSetTime}" errortext ="{EditEventSetTimeErrorMessage}" numericinputonly="#false" obscureinput="#false" enabled="{EventEnableButtonStatus}"/>
+        <button id="EditEventEnableButton" label="^EditEventEnableLabel" action="command:EventEnable" enabled="{EventEnableButtonStatus}" />
+        <button id="EditEventDisableButton" label="^EditEventDisableLabel" action="command:EventDisable" enabled="{EventDisableButtonStatus}" />
+      </controls>
+    </layout>
+  </layouts>
+  <alerts>
+  </alerts>
+</uidefinition>

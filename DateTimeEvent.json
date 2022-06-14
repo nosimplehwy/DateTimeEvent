@@ -1,0 +1,51 @@
+{
+  "CrestronSerialDeviceApi": {
+    "DeviceSupport": {},
+    "DeviceSupport2": [],
+    "GeneralInformation": {
+      "DeviceType": "ATI Custom",
+      "Manufacturer": "ATI",
+      "BaseModel": "Date Time Event",
+      "VersionDate": "2022-06-07 12:00:00.000",
+      "DriverVersion": "1.0000.0000",
+      "SdkVersion": "8.00.000.0012",
+      "Description": "Date Time Event Scheduler",
+      "Guid": "C01425B3-369B-4DB2-B668-A3DFAF7B79DB",
+      "ExtensionDeviceData": {
+        "IsExtensionDevice": true,
+        "IsMediaDevice": false,
+        "IsMediaSource": false
+      },
+      "SupportedSeries": ["Date Time Event"],
+      "SupportedModels": ["Date Time Event"]
+    },
+    "Api": {
+      "Communication": {
+        "CommunicationType": 5,
+        "Protocol": -1,
+        "Baud": -1,
+        "Parity": -1,
+        "HwHandshake": -1,
+        "SwHandshake": -1,
+        "DataBits": 0,
+        "StopBits": -1,
+        "Port": 4444,
+        "EnableAutoPolling": true,
+        "EnableAutoReconnect": true,
+        "TimeBetweenCommands": 250,
+        "ResponseTimeout": 3000,
+        "WaitForResponse": false,
+        "IpProtocol": 0,
+        "IsUserAdjustable": false,
+        "Authentication": {
+          "Type": "None",
+          "Required": false
+        },
+        "IsSecure": false,
+        "UserAdjustableProperties": [],
+        "DeviceId": 0
+      }
+    },
+    "UserAttributes": []
+  }
+}
