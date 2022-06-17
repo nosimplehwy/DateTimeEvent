@@ -74,7 +74,7 @@ namespace DateTimeEvent
                         Commit();
                         return new OperationResult(OperationResultCode.Success);
                     }
-                    if(DateTime.Now < verifiedTime)
+                    if(DateTime.Now >= verifiedTime)
                     {
                         _eventSetTimeError.Value = "The date entered is in the past.";
                         Commit();
@@ -266,6 +266,7 @@ namespace DateTimeEvent
             else
             {
                 _eventStatusText.Value = Format($"Enabled: {_eventSetTime.Value}");
+                SaveSetting(EventSetTimeSettingKey,_eventSetTime.Value);
             }
             Commit();
         }
@@ -289,8 +290,6 @@ namespace DateTimeEvent
         {
             DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "ScheduledEventOnSchedulerEnabled", e1.ToString());
             SetStatus(e1);
-            SaveSetting(EventSetTimeSettingKey,_eventSetTime.Value);
-
         }
 
         private void EventDisable()
