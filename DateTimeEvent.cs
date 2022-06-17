@@ -226,7 +226,6 @@ namespace DateTimeEvent
                 if (storedEvent.Enable)
                 {
                     DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", "Stored event is enabled.");
-                    _eventSetTime = (PropertyValue<string>)GetSetting(EventSetTimeSettingKey);
                     EventEnable(storedEvent.ScheduledDateTime);
                 }
                 else
@@ -237,8 +236,18 @@ namespace DateTimeEvent
             }
             catch (Exception exception)
             {
-                DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", $"No settings stored.{exception}");
+                DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", $"No event settings stored.{exception}");
                 SetStatus(false);
+            }
+
+            try
+            {
+                _eventSetTime.Value = (string)GetSetting(EventSetTimeSettingKey) ?? Empty;
+            }
+            catch (Exception exception)
+            {
+                DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", $"No time settings stored.{exception}");
+                _eventSetTime.Value = Empty;
             }
         }
 
@@ -280,7 +289,7 @@ namespace DateTimeEvent
         {
             DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "ScheduledEventOnSchedulerEnabled", e1.ToString());
             SetStatus(e1);
-            SaveSetting(EventSetTimeSettingKey,_eventSetTime);
+            SaveSetting(EventSetTimeSettingKey,_eventSetTime.Value);
 
         }
 
