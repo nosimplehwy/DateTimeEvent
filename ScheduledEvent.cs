@@ -60,13 +60,12 @@ namespace DateTimeEvent
         }
         private void SchedulerOnSchedulerElapsed(object sender, EventArgs e)
         {
-            if (_recurring == true)
-            {
-                ScheduledDateTime = ScheduledDateTime.AddYears(1);
-                DisableScheduler();
-                EnableScheduler();
-            }
             TriggerScheduledEvent?.Invoke(this, EventArgs.Empty);
+
+            if (_recurring != true) return;
+            ScheduledDateTime = ScheduledDateTime.AddYears(1);
+            DisableScheduler();
+            EnableScheduler();
         }
 
 
