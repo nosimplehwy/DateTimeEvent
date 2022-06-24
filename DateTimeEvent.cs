@@ -22,8 +22,7 @@ namespace DateTimeEvent
         private const string EventDisableStatusKey = "EventDisableButtonStatus";
         
         //Settings
-        private const string EventSetTimeSettingKey = "EventSetTime";
-        private const string ScheduledEventSettingKey = "ScheduledEvent";
+        private const string ScheduledEventSettingKey = "ScheduledEventSetting";
 
         #endregion Constants
 
@@ -39,19 +38,7 @@ namespace DateTimeEvent
         private PropertyValue<bool> _eventDisableButtonStatus;
 
         #endregion Fields
-
-        #region Constructor
-
-        public DateTimeEvent()
-        {
-            //TODO remove after debugging 
-            EnableLogging = true;
-            CreateDeviceDefinition();
-
-        }
-
-        #endregion Constructor
-
+        
         #region AExtensionDevice Members
 
         protected override IOperationResult DoCommand(string command, string[] parameters)
@@ -80,18 +67,15 @@ namespace DateTimeEvent
                         Commit();
                         return new OperationResult(OperationResultCode.Success);
                     }
-                    _eventSetTime.Value = _eventEnteredTime;
-                    _eventSetTimeError.Value = Empty;
-                    Commit();
                     
                     EventEnable(verifiedTime);
-                    return new OperationResult(OperationResultCode.Success);
+                    return new OperationResult(OperationResultCode.Success);                    
                 }
                 case "EventDisable":
                 {
                     DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "Switch", command);
                     EventDisable();
-                    return new OperationResult(OperationResultCode.Success);
+                    return new OperationResult(OperationResultCode.Success);                    
                 }
                 default:
                 {
@@ -140,6 +124,7 @@ namespace DateTimeEvent
 
         public override void Dispose()
         {
+            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "Dispose", Empty);
             if (_scheduledEvent != null)
                 _scheduledEvent.Enable = false;
         }
@@ -150,6 +135,7 @@ namespace DateTimeEvent
 
         public void Initialize()
         {
+            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "Initialize", Empty);
             var transport = new DateTimeEventTransport
             {
                 EnableLogging = InternalEnableLogging,
@@ -168,6 +154,7 @@ namespace DateTimeEvent
             _protocol.Initialize(DriverData);
             DeviceProtocol = _protocol;
             
+            CreateDeviceDefinition();
 
         }
 
@@ -220,85 +207,105 @@ namespace DateTimeEvent
             _eventDisableButtonStatus = CreateProperty<bool>(new PropertyDefinition(EventDisableStatusKey, Empty,
                 DevicePropertyType.Boolean));
             
-            try
-            {
-                var storedEvent = (ScheduledEvent)GetSetting(ScheduledEventSettingKey);
-                if (storedEvent.Enable)
-                {
-                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", "Stored event is enabled.");
-                    EventEnable(storedEvent.ScheduledDateTime);
-                }
-                else
-                {
-                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", "Stored event is disabled.");
-                    SetStatus(false);
-                }
-            }
-            catch (Exception exception)
-            {
-                DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", $"No event settings stored.{exception}");
-                SetStatus(false);
-            }
-
-            try
-            {
-                _eventSetTime.Value = (string)GetSetting(EventSetTimeSettingKey) ?? Empty;
-            }
-            catch (Exception exception)
-            {
-                DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", $"No time settings stored.{exception}");
-                _eventSetTime.Value = Empty;
-            }
+            RestoreSettings();
         }
 
         private void SetStatus(bool status)
         {
+            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "SetStatus", status.ToString());
             _eventEnableButtonStatus.Value = !status;
             _eventDisableButtonStatus.Value = status;
-            //save event to settings
-            SaveSetting(ScheduledEventSettingKey, _scheduledEvent);
-
-            if (status == false)
+            
+            // ReSharper disable once RedundantBoolCompare, 
+            if (_scheduledEvent != null && status == true)
             {
-                _eventSetTime.Value = Empty;
-                _eventStatusText.Value = "Disabled";
+                _eventSetTime.Value = Format($"{_scheduledEvent.ScheduledDateTime:MM/dd/yyyy h:mm tt}");
+                _eventStatusText.Value = Format($"Enabled: {_eventSetTime.Value}");
             }
             else
             {
-                _eventStatusText.Value = Format($"Enabled: {_eventSetTime.Value}");
-                SaveSetting(EventSetTimeSettingKey,_eventSetTime.Value);
+                _eventSetTime.Value = Empty;
+                _eventStatusText.Value = "Disabled";
+                                  
             }
             Commit();
+            StoreSettings();            
         }
 
        
-        private void EventEnable(DateTime setTime)
-        {
-            _scheduledEvent = new ScheduledEvent(setTime,true);
-            _scheduledEvent.SchedulerEnabled += ScheduledEventOnSchedulerEnabled;
-            _scheduledEvent.TriggerScheduledEvent += ScheduledEventOnTriggerScheduledEvent;
-            _scheduledEvent.Enable = true;
-        }
+                private void EventEnable(DateTime setTime)
+                {
+                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "EventEnable", Empty);
+                    _scheduledEvent = new ScheduledEvent(setTime,true);
+                    _scheduledEvent.SchedulerEnabled += ScheduledEventOnSchedulerEnabled;
+                    _scheduledEvent.TriggerScheduledEvent += ScheduledEventOnTriggerScheduledEvent;
+                    _scheduledEvent.Enable = true;
+                }
 
-        private void ScheduledEventOnTriggerScheduledEvent(object sender, EventArgs eventArgs)
-        {
-            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "ScheduledEventOnTriggerScheduledEvent", "Event Triggered");
-            SchedulerTriggered?.Invoke(this, EventArgs.Empty);
-        }
+                private void ScheduledEventOnTriggerScheduledEvent(object sender, EventArgs eventArgs)
+                {
+                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "ScheduledEventOnTriggerScheduledEvent", "Event Triggered");
+                    SchedulerTriggered?.Invoke(this, EventArgs.Empty);
+                }
 
-        private void ScheduledEventOnSchedulerEnabled(object sender, bool e1)
-        {
-            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "ScheduledEventOnSchedulerEnabled", e1.ToString());
-            SetStatus(e1);
-        }
+                private void ScheduledEventOnSchedulerEnabled(object sender, bool e1)
+                {
+                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "ScheduledEventOnSchedulerEnabled", e1.ToString());
+                    SetStatus(e1);
+                }
 
-        private void EventDisable()
+                private void EventDisable()
+                {
+                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "EventDisable", Empty);
+                    _scheduledEvent.Enable = false;
+                }
+                #endregion Private Methods
+
+                private void StoreSettings()
+                {
+                    if (_scheduledEvent == null) return;
+                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "StoreSettings", "Save Settings");
+                    SaveSetting(ScheduledEventSettingKey, new StoredSettings(_scheduledEvent.ScheduledDateTime,_eventSetTime.Value,_scheduledEvent.Enable));
+                }
+                private void RestoreSettings()
+                {
+                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "RestoreSettings", "Save Settings");
+                    var storedEvent = (StoredSettings)GetSetting(ScheduledEventSettingKey);
+                    if (storedEvent == null)
+                    {
+                        DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", $"No event settings stored.");
+                        SetStatus(false);
+                    }
+                    else
+                    {
+                        if (storedEvent.SetEnabled)
+                        {
+                            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", "Stored event is enabled.");
+                            _eventSetTime.Value = storedEvent.SetText;
+                            EventEnable(storedEvent.SetDateTime);
+                   
+                        }
+                        else
+                        {
+                            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", "Stored event is disabled.");
+                            SetStatus(false);
+                        }
+                    }
+                }
+        private class StoredSettings
         {
-            _scheduledEvent.Enable = false;
+            public StoredSettings(DateTime setDateTime, string setText, bool setEnabled)
+            {
+                SetDateTime = setDateTime;
+                SetText = setText;
+                SetEnabled = setEnabled;
+            }
+            public DateTime SetDateTime { get; }
+            public string SetText { get; }
+            public bool SetEnabled { get; }
         }
-        #endregion Private Methods
-        
-        
     }
+
+  
 }
 
