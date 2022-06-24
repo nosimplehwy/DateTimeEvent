@@ -26,7 +26,6 @@ namespace DateTimeEvent
             if (!string.IsNullOrEmpty(attributeValue)) return;
             DriverLog.Log(EnableLogging, Log, LoggingLevel.Error, "SetUserAttribute",
                 "Attribute value is null or empty");
-
         }
 
         public override void SetUserAttribute(string attributeId, bool attributeValue)
