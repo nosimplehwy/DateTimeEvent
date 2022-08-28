@@ -40,17 +40,17 @@ namespace DateTimeEvent
 
         private void EnableScheduler()
         {
-            OnEnabledChanged(true);
             _scheduler = new Scheduler(ScheduledDateTime);
             _scheduler.SchedulerElapsed += SchedulerOnSchedulerElapsed;
+            OnEnabledChanged(true);
         }
 
         private void DisableScheduler()
         {
-            OnEnabledChanged(false);
             if(_scheduler == null) return;
             _scheduler.SchedulerElapsed -= SchedulerOnSchedulerElapsed;
             _scheduler.Dispose();
+            OnEnabledChanged(false);
         }
         
         private void OnEnabledChanged(bool enabled)
