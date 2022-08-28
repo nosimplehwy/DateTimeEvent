@@ -16,7 +16,7 @@ namespace DateTimeEvent
         private void SetupTimer(DateTime dateTime)
         {
             if (dateTime < DateTime.Now)
-                throw new ArgumentOutOfRangeException(nameof(dateTime), string.Format("The date entered is in the past."));
+                throw new ArgumentOutOfRangeException(nameof(dateTime), "The date entered is in the past.");
             _timer = new Timer((dateTime - DateTime.Now).TotalMilliseconds);
             _timer.Elapsed += TimerElapsed;
             _timer.Start();
