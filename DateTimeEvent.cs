@@ -31,7 +31,6 @@ namespace DateTimeEvent
         private DateTimeEventProtocol _protocol;
         private ScheduledEvent _scheduledEvent;
         private PropertyValue<string> _eventSetTime;
-        private string _eventEnteredTime;
         private PropertyValue<string> _eventStatusText;
         private PropertyValue<string> _eventSetTimeError;
         private PropertyValue<bool> _eventEnableButtonStatus;
@@ -55,7 +54,7 @@ namespace DateTimeEvent
                 {
                     DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "Switch", command);
 
-                    if(!DateTime.TryParse(_eventEnteredTime, new CultureInfo("en-US"), DateTimeStyles.None, out var verifiedTime))
+                    if(!DateTime.TryParse(_eventSetTime.Value, new CultureInfo("en-US"), DateTimeStyles.None, out var verifiedTime))
                     {
                         _eventSetTimeError.Value = "The text entered is not in the correct format";
                         Commit();
@@ -97,23 +96,22 @@ namespace DateTimeEvent
                     if (value is string setTime)
                     {
                         DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "SetDriverPropertyValue", Format($"EventSetTime: {setTime}"));
-                        _eventEnteredTime = setTime;
+                        _eventSetTime.Value = setTime;
+                        _eventSetTimeError.Value = Empty;
                     }
                     else
                     {
                         _eventSetTimeError.Value = "The text entered is invalid.";
-                        Commit();
                     }
 
-                    break;
+                    Commit();
+                    return new OperationResult(OperationResultCode.Success);
                 }
                 default:
                 {
                     return new OperationResult(OperationResultCode.Error, "The property with object does not exist.");
                 }
             }
-            
-            return new OperationResult(OperationResultCode.Success);
         }
 
         protected override IOperationResult SetDriverPropertyValue<T>(string objectId, string propertyKey, T value)
@@ -245,13 +243,20 @@ namespace DateTimeEvent
                 private void ScheduledEventOnTriggerScheduledEvent(object sender, EventArgs eventArgs)
                 {
                     DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "ScheduledEventOnTriggerScheduledEvent", "Event Triggered");
-                    SchedulerTriggered?.Invoke(this, EventArgs.Empty);
+                    TriggerEvent();
                 }
 
                 private void ScheduledEventOnSchedulerEnabled(object sender, bool e1)
                 {
                     DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "ScheduledEventOnSchedulerEnabled", e1.ToString());
                     SetStatus(e1);
+                }
+
+                private void TriggerEvent()
+                {
+                    DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "TriggerEvent", "Event Trigger Invoked");
+                    SchedulerTriggered?.Invoke(this, EventArgs.Empty);
+                   
                 }
 
                 private void EventDisable()
@@ -273,25 +278,37 @@ namespace DateTimeEvent
                     var storedEvent = (StoredSettings)GetSetting(ScheduledEventSettingKey);
                     if (storedEvent == null)
                     {
-                        DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", $"No event settings stored.");
+                        DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition",
+                            $"No event settings stored.");
                         SetStatus(false);
+                        return;
+                    }
+
+                    if (storedEvent.SetEnabled)
+                    {
+                            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition",
+                                "Stored event is enabled.");
+                            _eventSetTime.Value = storedEvent.SetText;
+                            if (storedEvent.SetDateTime > DateTime.Now)
+                                EventEnable(storedEvent.SetDateTime);
+                            //assume that the system was not running when the even was supposed to fire and fire it when it starts up
+                            else
+                            {
+                                TriggerEvent();
+                                var time = storedEvent.SetDateTime;
+                                var setTime = new DateTime(DateTime.Now.Year + 1, time.Month, time.Day, time.Hour,
+                                    time.Minute, time.Second);
+                                EventEnable(setTime);
+                            }
                     }
                     else
                     {
-                        if (storedEvent.SetEnabled)
-                        {
-                            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", "Stored event is enabled.");
-                            _eventSetTime.Value = storedEvent.SetText;
-                            EventEnable(storedEvent.SetDateTime);
-                   
-                        }
-                        else
-                        {
-                            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition", "Stored event is disabled.");
+                            DriverLog.Log(EnableLogging, Log, LoggingLevel.Debug, "CreateDeviceDefinition",
+                                "Stored event is disabled.");
                             SetStatus(false);
-                        }
                     }
                 }
+                
         private class StoredSettings
         {
             public StoredSettings(DateTime setDateTime, string setText, bool setEnabled)
